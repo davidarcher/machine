@@ -13,6 +13,7 @@ import (
 	"github.com/docker/machine/drivers/azure/azureutil"
 	"github.com/docker/machine/drivers/azure/logutil"
 	"github.com/docker/machine/drivers/driverutil"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
@@ -115,6 +116,14 @@ func (d *Driver) getSecurityRules(extraPorts []string) (*[]network.SecurityRule,
 	rl := []network.SecurityRule{
 		mkRule(100, "SSHAllowAny", "Allow ssh from public Internet", "*", fmt.Sprintf("%d", d.BaseDriver.SSHPort), network.TCP),
 		mkRule(300, "DockerAllowAny", "Allow docker engine access (TLS-protected)", "*", fmt.Sprintf("%d", d.DockerPort), network.TCP),
+	}
+
+	if d.OS == drivers.LINUX {
+		sshRule := mkRule(100, "SSHAllowAny", "Allow ssh from public Internet", "*", fmt.Sprintf("%d", d.BaseDriver.SSHPort))
+		rl = append(rl, sshRule)
+	} else if d.OS == drivers.WINDOWS {
+		winrmRule := mkRule(400, "WinRMAllowAny", "Allow WinRM HTTPS access", "*", fmt.Sprintf("%d", winRMPort))
+		rl = append(rl, winrmRule)
 	}
 
 	// Open swarm port if configured
